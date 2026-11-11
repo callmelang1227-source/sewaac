@@ -1,9 +1,32 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
+use App\Http\Controllers\Admin\DashboardController;
+
+
+Route::middleware('guest')->group(function (): void {
+    Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/admin/login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:admin-login')
+        ->name('login.store');
+});
+
+Route::post('/admin/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
+Route::middleware(['auth', 'admin'])->group(function (): void {
+    Route::get('/admin', function () {
+        return redirect()->route('admin.dashboard');
+    })->name('admin.home');
+
+    Route::get('/admin/dashboard', DashboardController::class)
+        ->name('admin.dashboard');
+});
 
 foreach (config('seo.pages') as $routeName => $page) {
     Route::get($page['path'], function (Request $request) use ($page): Response|View {
